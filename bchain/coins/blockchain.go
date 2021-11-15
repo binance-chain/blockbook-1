@@ -15,6 +15,7 @@ import (
 	"github.com/trezor/blockbook/bchain/coins/bellcoin"
 	"github.com/trezor/blockbook/bchain/coins/bitcore"
 	"github.com/trezor/blockbook/bchain/coins/bitzeny"
+	"github.com/trezor/blockbook/bchain/coins/bsc"
 	"github.com/trezor/blockbook/bchain/coins/btc"
 	"github.com/trezor/blockbook/bchain/coins/btg"
 	"github.com/trezor/blockbook/bchain/coins/cpuchain"
@@ -63,6 +64,8 @@ func init() {
 	BlockChainFactories["Testnet"] = btc.NewBitcoinRPC
 	BlockChainFactories["Zcash"] = zec.NewZCashRPC
 	BlockChainFactories["Zcash Testnet"] = zec.NewZCashRPC
+	BlockChainFactories["BSC"] = bsc.NewEthereumRPC
+	BlockChainFactories["BSC Testnet"] = bsc.NewEthereumRPC
 	BlockChainFactories["Ethereum"] = eth.NewEthereumRPC
 	BlockChainFactories["Ethereum Classic"] = eth.NewEthereumRPC
 	BlockChainFactories["Ethereum Testnet Ropsten"] = eth.NewEthereumRPC
@@ -312,6 +315,16 @@ func (c *blockChainWithMetrics) EthereumTypeGetErc20ContractInfo(contractDesc bc
 func (c *blockChainWithMetrics) EthereumTypeGetErc20ContractBalance(addrDesc, contractDesc bchain.AddressDescriptor) (v *big.Int, err error) {
 	defer func(s time.Time) { c.observeRPCLatency("EthereumTypeGetErc20ContractInfo", s, err) }(time.Now())
 	return c.b.EthereumTypeGetErc20ContractBalance(addrDesc, contractDesc)
+}
+
+func (c *blockChainWithMetrics) EthereumTypeGetReceipt(txid string) (receipt *bchain.TransactionReceipt, err error) {
+	defer func(s time.Time) { c.observeRPCLatency("EthereumTypeGetReceipt", s, err) }(time.Now())
+	return c.b.EthereumTypeGetReceipt(txid)
+}
+
+func (c *blockChainWithMetrics) BscTypeGetTokenHub()(th *bchain.Tokenhub, err error) {
+	defer func(s time.Time) { c.observeRPCLatency("BscTypeGetTokenHub", s, err) }(time.Now())
+	return c.b.BscTypeGetTokenHub()
 }
 
 type mempoolWithMetrics struct {

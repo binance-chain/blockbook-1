@@ -86,7 +86,7 @@ var (
 
 var (
 	chanSyncIndex                 = make(chan struct{})
-	chanSyncMempool               = make(chan struct{})
+	chanSyncMempool               = make(chan struct{}, 10000000) // s.chanNewTx = make(chan ethcommon.Hash, 10000000)
 	chanStoreInternalState        = make(chan struct{})
 	chanSyncIndexDone             = make(chan struct{})
 	chanSyncMempoolDone           = make(chan struct{})
@@ -173,7 +173,7 @@ func mainWithExitCode() int {
 		return exitCodeFatal
 	}
 
-	index, err = db.NewRocksDB(*dbPath, *dbCache, *dbMaxOpenFiles, chain.GetChainParser(), metrics)
+	index, err = db.NewRocksDBWithChain(*dbPath, *dbCache, *dbMaxOpenFiles, metrics, chain)
 	if err != nil {
 		glog.Error("rocksDB: ", err)
 		return exitCodeFatal
@@ -206,10 +206,10 @@ func mainWithExitCode() int {
 	}
 
 	if internalState.DbState != common.DbStateClosed {
-		if internalState.DbState == common.DbStateInconsistent {
-			glog.Error("internalState: database is in inconsistent state and cannot be used")
-			return exitCodeFatal
-		}
+		//if internalState.DbState == common.DbStateInconsistent {
+		//	glog.Error("internalState: database is in inconsistent state and cannot be used")
+		//	return exitCodeFatal
+		//}
 		glog.Warning("internalState: database was left in open state, possibly previous ungraceful shutdown")
 	}
 
@@ -315,6 +315,17 @@ func mainWithExitCode() int {
 		internalState.InitialSync = false
 	}
 	go storeInternalStateLoop()
+
+	// update blockbook sync metrics
+	fnOnNewBlockMetrics := func(hash string, height uint32) {
+		ci, err := chain.GetChainInfo()
+		if err != nil {
+			ci = &bchain.ChainInfo{}
+		}
+		metrics.BackendBlocks.Set(float64(ci.Blocks))
+		metrics.BlockbookBestHeight.Set(float64(height))
+	}
+	callbacksOnNewBlock = append(callbacksOnNewBlock, fnOnNewBlockMetrics)
 
 	if publicServer != nil {
 		// start full public interface
@@ -467,6 +478,10 @@ func blockbookAppInfoMetric(db *db.RocksDB, chain bchain.BlockChain, txCache *db
 		"backend_version":          si.Backend.Version,
 		"backend_subversion":       si.Backend.Subversion,
 		"backend_protocol_version": si.Backend.ProtocolVersion}).Set(float64(0))
+
+	metrics.BackendBlocks.Set(float64(si.Backend.Blocks))
+	metrics.BlockbookBestHeight.Set(float64(si.Blockbook.BestHeight))
+
 	return nil
 }
 
@@ -657,6 +672,7 @@ func pushSynchronizationHandler(nt bchain.NotificationType) {
 		chanSyncIndex <- struct{}{}
 	} else if nt == bchain.NotificationNewTx {
 		chanSyncMempool <- struct{}{}
+		metrics.BufferedNewTx.Set(float64(len(chanSyncMempool)))
 	} else {
 		glog.Error("MQ: unknown notification sent")
 	}

@@ -1,0 +1,61 @@
+{
+  "coin": {
+    "name": "BSC Testnet",
+    "shortcut": "TBSC",
+    "label": "BSC Testnet",
+    "alias": "bsc_testnet"
+  },
+  "ports": {
+    "backend_rpc": 8038,
+    "backend_message_queue": 0,
+    "backend_p2p": 38338,
+    "backend_http": 8138,
+    "blockbook_internal": 9038,
+    "blockbook_public": 9138
+  },
+  "ipc": {
+    "rpc_url_template": "ws://127.0.0.1:{{.Ports.BackendRPC}}",
+    "rpc_timeout": 25
+  },
+  "backend": {
+    "package_name": "backend-bsc-testnet",
+    "package_revision": "satoshilabs-1",
+    "system_user": "bsc-test",
+    "version": "1.9.13-cbc4ac26",
+    "binary_url": "https://github.com/binance-chain/bsc/releases/download/v1.0.6/testnet.zip",
+    "extract_command": "wget https://github.com/binance-chain/bsc/releases/download/v1.0.6/geth_linux && mv geth_linux ./backend && chmod +x ./backend/geth_linux && unzip -d backend",
+    "exec_command_template": "/bin/sh -c 'if [ ! -f \"{{.Env.BackendDataPath}}/{{.Coin.Alias}}/backend/geth/nodekey\" ]; then {{.Env.BackendInstallPath}}/{{.Coin.Alias}}/geth_linux --datadir {{.Env.BackendDataPath}}/{{.Coin.Alias}}/backend init ./genesis.json; fi && {{.Env.BackendInstallPath}}/{{.Coin.Alias}}/geth_linux --config ./config.toml --ipcdisable --syncmode full --cache 1024 --nat none --datadir {{.Env.BackendDataPath}}/{{.Coin.Alias}}/backend --port 38336 --ws --wsaddr 127.0.0.1 --wsport {{.Ports.BackendRPC}} --wsorigins \"*\" --rpc --rpcport 8136 -rpcaddr 127.0.0.1 --rpccorsdomain \"*\" --rpcvhosts \"*\" 2>>{{.Env.BackendDataPath}}/{{.Coin.Alias}}/backend/node.log'",
+    "logrotate_files_template": "{{.Env.BackendDataPath}}/{{.Coin.Alias}}/backend/{{.Coin.Alias}}.log",
+    "postinst_script_template": "",
+    "service_type": "simple",
+    "service_additional_params_template": "",
+    "protect_memory": true,
+    "mainnet": false,
+    "server_config_file": "",
+    "client_config_file": ""
+  },
+  "blockbook": {
+    "package_name": "blockbook-bsc-testnet",
+    "system_user": "blockbook-bsc-testnet",
+    "internal_binding_template": ":{{.Ports.BlockbookInternal}}",
+    "public_binding_template": ":{{.Ports.BlockbookPublic}}",
+    "explorer_url": "",
+    "additional_params": "",
+    "block_chain": {
+      "parse": true,
+      "mempool_workers": 8,
+      "mempool_sub_workers": 2,
+      "block_addresses_to_keep": 300,
+      "additional_params": {
+        "mempoolTxTimeoutHours": 48,
+        "queryBackendOnMempoolResync": false,
+        "fiat_rates": "coingecko",
+        "fiat_rates_params": "{\"url\": \"https://api.coingecko.com/api/v3\", \"coin\": \"ethereum\", \"periodSeconds\": 60}"
+      }
+    }
+  },
+  "meta": {
+    "package_maintainer": "IT",
+    "package_maintainer_email": "tom.zhao@binance.com"
+  }
+}
