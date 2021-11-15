@@ -182,10 +182,6 @@ type TransactionReceipt struct {
 	ContractAddress string `json:"contractAddress"`
 }
 
-type TransactionReceipt struct {
-	ContractAddress string `json:"contractAddress"`
-}
-
 // RPCError defines rpc error returned by backend
 type RPCError struct {
 	Code    int    `json:"code"`
